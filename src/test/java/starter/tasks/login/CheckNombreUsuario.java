@@ -1,5 +1,6 @@
 package starter.tasks.login;
 
+import net.serenitybdd.core.Serenity;
 import net.serenitybdd.core.annotations.findby.By;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
@@ -23,16 +24,20 @@ public class CheckNombreUsuario implements Task {
 
     @Override
     public <T extends Actor> void performAs(T actor) {
-        // Configurar WebDriverWait con un tiempo de espera de 10 segundos
-        WebDriverWait wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
 
-        // Esperar hasta que el nombre de usuario sea visible
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(By.xpath(LoginPage.USERNAME_XPATH))
-        );
-
-        actor.attemptsTo(
-                Ensure.that(GetNombreUsuario.getNombreUsuario()).contains("Welcome" + " " + usuario)
-        );
+        try {
+            WebDriverWait wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
+            wait.until(
+                    ExpectedConditions.visibilityOfElementLocated(By.xpath(LoginPage.USERNAME_XPATH))
+            );
+            actor.attemptsTo(
+                    Ensure.that(GetNombreUsuario.getNombreUsuario()).contains("Welcome" + " " + usuario)
+            );
+        } catch (Exception e) {
+            Serenity.reportThat("Fallo en la tarea de login",
+                    () -> {
+                        throw new AssertionError("No se pudo completar el login: " + e.getMessage());
+                    });
+        }
     }
 }

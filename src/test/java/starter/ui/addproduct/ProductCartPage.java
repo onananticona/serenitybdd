@@ -12,7 +12,7 @@ public class ProductCartPage {
     public static final Target CATEGORIA_PHONES_BUTTON = Target.the("Phones category button")
             .located(By.xpath("//a[@id='itemc' and text()='Phones']"));
     public static final Target CATEGORIA_LAPTOPS_BUTTON = Target.the("Laptops category button")
-            .located(By.xpath("//a[@id='itemc' and text()='Laptops']"));
+            .located(By.xpath("//xa[@id='itemc' and text()='Laptops']"));
     public static final Target CATEGORIA_MONITORS_BUTTON = Target.the("Monitors category button")
             .located(By.xpath("//a[@id='itemc' and text()='Monitors']"));
     //Productos
