@@ -36,6 +36,4 @@ public class ProductCartPage {
     public static final Map<String, Target> PRODUCTOS = new HashMap<String, Target>() {{
         put("Sony vaio i7", PRODUCT_LAPTOPS_SONYVAIO7_BUTTON);
     }};
-
-
 }
