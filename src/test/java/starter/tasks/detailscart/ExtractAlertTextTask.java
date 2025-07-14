@@ -12,12 +12,13 @@ import java.time.Duration;
 
 public class ExtractAlertTextTask implements Task {
 
+    WebDriverWait wait;
     private static String alertText;
 
     @Override
     public <T extends Actor> void performAs(T actor) {
         try {
-            WebDriverWait wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
+            wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
             wait.until(ExpectedConditions.alertIsPresent());
 
             Alert alert = BrowseTheWeb.as(actor).getDriver().switchTo().alert();

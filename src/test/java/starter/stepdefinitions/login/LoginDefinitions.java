@@ -11,29 +11,25 @@ import org.openqa.selenium.WebDriver;
 import starter.models.login.LoginModel;
 import starter.tasks.login.CheckNombreUsuario;
 import starter.tasks.login.LoginTask;
+import starter.tasks.login.OpenBrowserTask;
 import starter.utils.GetInfoDataTable;
+
 
 public class LoginDefinitions {
 
     @Managed
     WebDriver browser;
-
-    String usuario = "";
-    String contraseña = "";
-
-    Actor user = Actor.named("usuario");
     LoginModel loginModel;
+    Actor user = Actor.named("user");
 
-    //Credenciales válidas
-    @Given("Estoy en la página de inicio de sesión de Product Store")
-    public void estoyEnLaPáginaDeInicioDeSesiónDeProductStore() {
+    @Given("El usuario está en la página de inicio de sesión de Product Store")
+    public void elUsuarioEstáEnLaPáginaDeInicioDeSesiónDeProductStore() {
         user.can(BrowseTheWeb.with(browser));
-        browser.get("https://www.demoblaze.com/");
+        user.attemptsTo(OpenBrowserTask.openBrowserTask());
     }
 
-    @When("Ingreso mi nombre de usuario y contraseña")
-    public void ingresoMiNombreDeUsuarioYContraseña(DataTable userInfo) {
-
+    @When("El usuario ingresa su nombre de usuario y contraseña")
+    public void elUsuarioIngresaSuNombreDeUsuarioYContraseña(DataTable userInfo) {
         loginModel = GetInfoDataTable.getLoginCredentials(userInfo);
 
         user.attemptsTo(
@@ -41,20 +37,10 @@ public class LoginDefinitions {
         );
     }
 
-    @Then("Debería ver el mensaje de bienvenida que contiene el nombre de usuario")
-    public void verElMensajeDeBienvenidaQueContieneElNombreDeUsuario() {
+    @Then("El usuario debería ver un mensaje de bienvenida que contiene su nombre de usuario")
+    public void elUsuarioDeberíaVerUnMensajeDeBienvenidaQueContieneSuNombreDeUsuario() {
         user.attemptsTo(
                 new CheckNombreUsuario(loginModel.getUsuario())
         );
     }
-
-    //Credenciales inválidas
-    @Then("Debería ver un mensaje de error que diga {string}")
-    public void deberíaVerUnMensajeDeErrorQueDiga(String errorMessage) {
-        user.attemptsTo(
-
-        );
-    }
-
-
 }

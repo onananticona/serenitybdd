@@ -16,7 +16,7 @@
         <junit-platform-suite.version>1.11.0</junit-platform-suite.version>
         <cucumber-junit-platform-engine.version>7.16.1</cucumber-junit-platform-engine.version>
         <encoding>UTF-8</encoding>
-        <tags></tags>
+
         <webdriver.base.url></webdriver.base.url>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -144,7 +144,6 @@
                 <artifactId>serenity-maven-plugin</artifactId>
                 <version>${serenity.version}</version>
                 <configuration>
-                    <tags>${tags}</tags>
                     <reports>single-page-html</reports>
                 </configuration>
                 <dependencies>

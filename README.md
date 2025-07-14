@@ -2,13 +2,15 @@
 
 ### Ejecución de test por línea de comandos
 
-
 #### Maven
+
 ```json
-$ mvn clean verify -Ddriver=firefox
+mvn clean verify -Dcucumber.filter.tags=@login -Denvironment=certification
+
 ```
 
 #### Gradle
+
 ```json
-$ gradlew clean test -Pdriver=firefox
+$ gradlew clean test -Pdriver=chrome
 ```

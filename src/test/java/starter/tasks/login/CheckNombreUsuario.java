@@ -15,6 +15,7 @@ import java.time.Duration;
 
 public class CheckNombreUsuario implements Task {
 
+    WebDriverWait wait;
     private final String usuario;
 
     // Constructor que acepta el nombre de usuario
@@ -26,10 +27,9 @@ public class CheckNombreUsuario implements Task {
     public <T extends Actor> void performAs(T actor) {
 
         try {
-            WebDriverWait wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
-            wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(By.xpath(LoginPage.USERNAME_XPATH))
-            );
+            wait = new WebDriverWait(BrowseTheWeb.as(actor).getDriver(), Duration.ofSeconds(10));
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(LoginPage.USERNAME_XPATH)));
+            
             actor.attemptsTo(
                     Ensure.that(GetNombreUsuario.getNombreUsuario()).contains("Welcome" + " " + usuario)
             );

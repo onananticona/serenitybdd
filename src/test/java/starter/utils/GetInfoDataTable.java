@@ -8,7 +8,7 @@ import java.util.List;
 
 public class GetInfoDataTable {
 
-    // Método estático que recibe un DataTable y devuelve un objeto LoginModel
+    // Metodo estático que recibe un DataTable y devuelve un objeto LoginModel
     public static LoginModel getLoginCredentials(DataTable userInfo) {
 
         // Convertir el DataTable en una lista de listas de Strings

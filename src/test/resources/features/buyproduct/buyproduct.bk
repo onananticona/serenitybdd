@@ -1,0 +1,11 @@
+@buyProduct
+
+Feature: Comprar productos del carrito de compras en la tienda Product Store
+
+  Como un usuario registrado
+  Quiero poder iniciar sesión en la aplicación
+  Para poder comprar productos de mi carrito de compras
+
+  Scenario Outline: El usuario compra productos que se encuentran dentro del carrito de compras
+
+

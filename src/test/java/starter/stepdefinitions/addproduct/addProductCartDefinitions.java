@@ -21,21 +21,19 @@ public class addProductCartDefinitions {
 
     @Managed
     WebDriver browser;
-
-    Actor user = Actor.named("usuario");
     ProductModel productModel;
+    Actor user = Actor.named("user");
 
-    @And("Veo el mensaje de bienvenida que contiene el nombre de usuario {string}")
-    public void veoElMensajeDeBienvenidaQueContieneElNombreDeUsuario(String usuario) {
-
+    @And("El usuario ve un mensaje de bienvenida que contiene su nombre de usuario")
+    public void elUsuarioVeUnMensajeDeBienvenidaQueContieneSuNombreDeUsuario() {
         user.can(BrowseTheWeb.with(browser));
         user.attemptsTo(
-                new CheckNombreUsuario(usuario)
+                new CheckNombreUsuario("Chava5")
         );
     }
 
-    @When("Selecciono un producto de la categoría")
-    public void seleccionoUnProductoDeLaCategoria(DataTable productInfo) {
+    @When("El usuario selecciona un producto de una de las categorías")
+    public void elUsuarioSeleccionaUnProductoDeUnaDeLasCategorías(DataTable productInfo) {
         productModel = GetInfoDataTable.getProductInfo(productInfo);
 
         user.can(BrowseTheWeb.with(browser));
@@ -44,13 +42,12 @@ public class addProductCartDefinitions {
         ));
     }
 
-    @And("Lo añado al carrito de compras")
-    public void loAñadoAAlCarritoDeCompras() {
+    @And("Añade el producto al carrito de compras")
+    public void añadeElProductoAlCarritoDeCompras() {
         user.can(BrowseTheWeb.with(browser));
         user.attemptsTo(
                 Click.on(ProductCartPage.PRODUCT_ADD_BUTTON)
         );
-
     }
 
     @Then("El sistema debería mostrar el mensaje de confirmación {string}")
@@ -68,5 +65,4 @@ public class addProductCartDefinitions {
                 new CheckProductCartTask(productModel.getProduct())
         );
     }
-
 }
