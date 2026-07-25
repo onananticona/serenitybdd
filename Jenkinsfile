@@ -21,10 +21,13 @@ pipeline {
     }
 
     parameters {
-        string(
+        choice(
             name: 'ENVIRONMENT',
-            defaultValue: 'certification',
-            trim: true,
+            choices: [
+                'certification',
+                'development',
+                'production'
+            ],
             description: 'Ambiente definido en serenity.conf'
         )
 
@@ -37,7 +40,10 @@ pipeline {
 
         choice(
             name: 'BROWSER',
-            choices: ['chrome'],
+            choices: [
+                'chrome',
+                'safari'
+            ],
             description: 'Navegador de ejecución'
         )
 
@@ -98,23 +104,48 @@ pipeline {
         stage('Ejecutar pruebas') {
             steps {
                 script {
-                    def chromeSwitches = params.HEADLESS
-                        ? '--headless=new;--window-size=1920,1080'
-                        : '--window-size=1920,1080'
+                    if (params.BROWSER == 'safari' && params.HEADLESS) {
+                        error(
+                            'Safari no dispone de un modo headless compatible. ' +
+                            'Desmarca el parámetro HEADLESS para ejecutar en Safari.'
+                        )
+                    }
 
                     withEnv([
                         "TEST_ENVIRONMENT=${params.ENVIRONMENT}",
-                        "TEST_TAGS=${params.TAGS}",
-                        "TEST_BROWSER=${params.BROWSER}",
-                        "CHROME_SWITCHES=${chromeSwitches}"
+                        "TEST_TAGS=${params.TAGS}"
                     ]) {
-                        sh '''
-                            mvn -B -ntp clean verify \
-                              -Dcucumber.filter.tags="$TEST_TAGS" \
-                              -Denvironment="$TEST_ENVIRONMENT" \
-                              -Dwebdriver.driver="$TEST_BROWSER" \
-                              -Dchrome.switches="$CHROME_SWITCHES"
-                        '''
+                        if (params.BROWSER == 'safari') {
+
+                            echo 'Ejecutando pruebas en Safari visible'
+
+                            sh '''
+                                mvn -B -ntp clean verify \
+                                  -Dcucumber.filter.tags="$TEST_TAGS" \
+                                  -Denvironment="$TEST_ENVIRONMENT" \
+                                  -Dwebdriver.driver=safari
+                            '''
+
+                        } else {
+
+                            def chromeSwitches = params.HEADLESS
+                                ? '--headless=new;--window-size=1920,1080'
+                                : '--window-size=1920,1080'
+
+                            withEnv([
+                                "CHROME_SWITCHES=${chromeSwitches}"
+                            ]) {
+                                echo "Ejecutando pruebas en Chrome. Headless: ${params.HEADLESS}"
+
+                                sh '''
+                                    mvn -B -ntp clean verify \
+                                      -Dcucumber.filter.tags="$TEST_TAGS" \
+                                      -Denvironment="$TEST_ENVIRONMENT" \
+                                      -Dwebdriver.driver=chrome \
+                                      -Dchrome.switches="$CHROME_SWITCHES"
+                                '''
+                            }
+                        }
                     }
                 }
             }
