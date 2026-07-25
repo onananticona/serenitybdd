@@ -74,6 +74,12 @@ pipeline {
             }
         }
 
+        stage('Prueba temporal de correo') {
+           steps {
+               sh 'exit 1'
+           }
+        }
+
         stage('Verificar entorno') {
             steps {
                 sh '''
