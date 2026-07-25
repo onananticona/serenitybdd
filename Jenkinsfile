@@ -153,6 +153,27 @@ pipeline {
             )
         }
 
+        success {
+                emailext(
+                    to: "${env.NOTIFICATION_EMAIL}",
+                    subject: "✅ Ejecución exitosa: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                    mimeType: 'text/html',
+                    body: """
+                        <h2>Las pruebas terminaron correctamente</h2>
+
+                        <p><strong>Trabajo:</strong> ${env.JOB_NAME}</p>
+                        <p><strong>Ejecución:</strong> #${env.BUILD_NUMBER}</p>
+                        <p><strong>Resultado:</strong> ${currentBuild.currentResult}</p>
+
+                        <p>
+                            <a href="${env.BUILD_URL}">
+                                Abrir ejecución en Jenkins
+                            </a>
+                        </p>
+                    """
+                )
+        }
+
         failure {
             emailext(
                 to: "${env.NOTIFICATION_EMAIL}",
