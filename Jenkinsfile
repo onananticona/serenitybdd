@@ -123,13 +123,11 @@ pipeline {
 
     post {
         always {
-            // Registra resultados para tendencias e historial.
             junit(
                 allowEmptyResults: true,
                 testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
             )
 
-            // Publica el reporte Serenity.
             publishHTML(
                 target: [
                     allowMissing: true,
@@ -142,7 +140,6 @@ pipeline {
                 ]
             )
 
-            // Conserva todos los archivos del reporte como artefactos.
             archiveArtifacts(
                 allowEmptyArchive: true,
                 artifacts: 'target/site/serenity/**',
@@ -150,20 +147,76 @@ pipeline {
             )
         }
 
-        success {
-            echo 'La ejecución terminó correctamente.'
+        failure {
+            emailext(
+                to: "${env.NOTIFICATION_EMAIL}",
+                subject: "❌ Falló ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                    <h2>La ejecución de pruebas falló</h2>
+
+                    <p><strong>Trabajo:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Ejecución:</strong> #${env.BUILD_NUMBER}</p>
+                    <p><strong>Resultado:</strong> ${currentBuild.currentResult}</p>
+
+                    <p>
+                        <a href="${env.BUILD_URL}">
+                            Abrir ejecución en Jenkins
+                        </a>
+                    </p>
+
+                    <p>
+                        <a href="${env.BUILD_URL}console">
+                            Revisar Console Output
+                        </a>
+                    </p>
+                """
+            )
         }
 
         unstable {
-            echo 'La ejecución terminó con pruebas fallidas o inestables.'
+            emailext(
+                to: "${env.NOTIFICATION_EMAIL}",
+                subject: "⚠️ Ejecución inestable: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                    <h2>La ejecución terminó con pruebas inestables</h2>
+
+                    <p><strong>Trabajo:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Ejecución:</strong> #${env.BUILD_NUMBER}</p>
+                    <p><strong>Resultado:</strong> ${currentBuild.currentResult}</p>
+
+                    <p>
+                        <a href="${env.BUILD_URL}">
+                            Revisar resultados y reporte
+                        </a>
+                    </p>
+                """
+            )
         }
 
-        failure {
-            echo 'El Pipeline falló. Revisa Console Output.'
+        fixed {
+            emailext(
+                to: "${env.NOTIFICATION_EMAIL}",
+                subject: "✅ Se recuperó ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                    <h2>El Pipeline volvió a funcionar correctamente</h2>
+
+                    <p><strong>Trabajo:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Ejecución:</strong> #${env.BUILD_NUMBER}</p>
+                    <p><strong>Resultado:</strong> ${currentBuild.currentResult}</p>
+
+                    <p>
+                        <a href="${env.BUILD_URL}">
+                            Abrir ejecución en Jenkins
+                        </a>
+                    </p>
+                """
+            )
         }
 
         cleanup {
-            // Libera espacio una vez publicados resultados y artefactos.
             deleteDir()
         }
     }
