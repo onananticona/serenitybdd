@@ -206,26 +206,32 @@ pipeline {
                     script: '''
                         set +e
 
-                        REPORTE=$(grep -l -E \
-                          '<<< FAILURE!|AssertionError|Exception|Error' \
-                          target/failsafe-reports/*.txt 2>/dev/null \
-                          | head -n 1)
+                        REPORTES="target/failsafe-reports/*.txt"
 
-                        if [ -z "$REPORTE" ]; then
-                            exit 0
+                        # 1. Buscar primero el mensaje contextual creado por la automatización.
+                        MOTIVO=$(grep -h -m 1 \
+                          '^java\\.lang\\.AssertionError:' \
+                          $REPORTES 2>/dev/null \
+                          | head -n 1 \
+                          | sed -E \
+                            's/^java\\.lang\\.AssertionError:[[:space:]]*//')
+
+                        # 2. Si no existe AssertionError, buscar la causa técnica más profunda.
+                        if [ -z "$MOTIVO" ]; then
+                            MOTIVO=$(grep -h \
+                              '^[[:space:]]*Caused by:' \
+                              $REPORTES 2>/dev/null \
+                              | tail -n 1 \
+                              | sed -E \
+                                's/^[[:space:]]*Caused by:[[:space:]]*[^:]+:[[:space:]]*//')
                         fi
 
-                        MOTIVO=$(grep -E \
-                          '^[[:space:]]*Caused by:' \
-                          "$REPORTE" \
-                          | tail -n 1 \
-                          | sed -E \
-                            's/^[[:space:]]*Caused by:[[:space:]]*[^:]+:[[:space:]]*//')
-
+                        # 3. Si tampoco existe, buscar cualquier excepción Java.
                         if [ -z "$MOTIVO" ]; then
-                            MOTIVO=$(grep -E -m 1 \
-                              '^java\\..*(AssertionError|Exception|Error):' \
-                              "$REPORTE" \
+                            MOTIVO=$(grep -h -m 1 \
+                              '^java\\..*(Exception|Error):' \
+                              $REPORTES 2>/dev/null \
+                              | head -n 1 \
                               | sed -E \
                                 's/^java\\.[^:]+:[[:space:]]*//')
                         fi

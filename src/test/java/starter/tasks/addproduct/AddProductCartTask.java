@@ -5,11 +5,11 @@ import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.targets.Target;
-import net.thucydides.core.webdriver.exceptions.ElementShouldBePresentException;
-import org.openqa.selenium.ElementNotInteractableException;
-import org.openqa.selenium.NoSuchElementException;
+import net.serenitybdd.screenplay.waits.WaitUntil;
+import org.openqa.selenium.StaleElementReferenceException;
 import starter.ui.addproduct.ProductCartPage;
 
+import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
 
 public class AddProductCartTask implements Task {
 
@@ -23,70 +23,76 @@ public class AddProductCartTask implements Task {
 
     @Override
     public <T extends Actor> void performAs(T actor) {
-        // Target categoriaTarget = Target.the("Botón de categoría " + categoria)
-        //         .located(By.xpath("//a[@id='itemc' and text()='" + categoria + "']"));
-        Target categoriaTarget = ProductCartPage.CATEGORIAS.get(categoria);
-        Target productTarget = ProductCartPage.PRODUCTOS.get(producto);
 
         try {
-            actor.attemptsTo(
-                    Click.on(categoriaTarget),
-                    Click.on(productTarget)
+            Target categoriaTarget = ProductCartPage.CATEGORIAS.get(categoria);
+            Target productoTarget = ProductCartPage.PRODUCTOS.get(producto);
+
+            validarTarget(
+                    categoriaTarget,
+                    "No existe un Target configurado para la categoría '" + categoria + "'."
             );
-        } catch (ElementShouldBePresentException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no presente")
-                    .andContents("No se pudo localizar el elemento. Mensaje: " + e.getMessage());
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        throw new AssertionError("Error detectado. Por favor revisa la sección 'Error: Elemento no presente' para más detalles.", e);
-                    });
-        } catch (NoSuchElementException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no encontrado en DOM")
-                    .andContents("No se encontró el elemento en el DOM. Mensaje: " + e.getMessage());
+            validarTarget(
+                    productoTarget,
+                    "No existe un Target configurado para el producto '" + producto + "'."
+            );
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error: Elemento no encontrado en DOM' para más detalles.";
-                    });
-        } catch (ElementNotInteractableException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no interactuable")
-                    .andContents("El elemento está en el DOM pero no es interactuable. Mensaje: " + e.getMessage());
+            /*
+             * Se separan los clics porque al seleccionar una categoría,
+             * Demoblaze actualiza la lista de productos en el DOM.
+             */
+            actor.attemptsTo(
+                    Click.on(categoriaTarget)
+            );
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error: Elemento no interactuable' para más detalles.";
-                    });
+            actor.attemptsTo(
+                    WaitUntil.the(productoTarget, isVisible())
+                            .forNoMoreThan(10).seconds(),
+
+                    Click.on(productoTarget)
+            );
+
         } catch (Exception exception) {
 
-            String motivo = obtenerCausaRaiz(exception);
+            Throwable causaRaiz = obtenerCausaRaiz(exception);
+            String motivoTecnico = describirCausa(causaRaiz);
+
+            /*
+             * Debe estar en una sola línea para que Jenkins pueda
+             * recuperarlo fácilmente desde el reporte de Failsafe.
+             */
+            String mensajeError = String.format(
+                    "No se pudo seleccionar el producto '%s' de la categoría '%s'. " +
+                            "Motivo técnico: %s",
+                    producto,
+                    categoria,
+                    motivoTecnico
+            );
 
             Serenity.recordReportData()
-                    .withTitle("Error inesperado en AddProductCartTask")
+                    .withTitle("Error en AddProductCartTask")
                     .andContents(
                             """
-                            No se pudo completar la acción de agregar el producto.
-        
+                            No se pudo completar la selección del producto.
+
                             Producto: %s
                             Categoría: %s
-                            Motivo: %s
-                            """.formatted(producto, categoria, motivo)
+                            Motivo técnico: %s
+                            """.formatted(producto, categoria, motivoTecnico)
                     );
 
-            throw new AssertionError(
-                    """
-                    No se pudo seleccionar el producto '%s' de la categoría '%s'.
-                    Motivo: %s
-                    """.formatted(producto, categoria, motivo),
-                    exception
-            );
+            throw new AssertionError(mensajeError, exception);
         }
     }
 
-    private static String obtenerCausaRaiz(Throwable error) {
+    private static void validarTarget(Target target, String mensaje) {
+        if (target == null) {
+            throw new IllegalArgumentException(mensaje);
+        }
+    }
+
+    private static Throwable obtenerCausaRaiz(Throwable error) {
 
         Throwable causaRaiz = error;
 
@@ -96,14 +102,26 @@ public class AddProductCartTask implements Task {
             causaRaiz = causaRaiz.getCause();
         }
 
-        String mensaje = causaRaiz.getMessage();
+        return causaRaiz;
+    }
 
-        if (mensaje == null || mensaje.isBlank()) {
-            return causaRaiz.getClass().getSimpleName();
+    private static String describirCausa(Throwable causa) {
+
+        String detalle = causa.getMessage();
+
+        if (detalle == null || detalle.isBlank()) {
+            detalle = causa.getClass().getSimpleName();
+        } else {
+            detalle = detalle
+                    .replaceAll("\\s+", " ")
+                    .trim();
         }
 
-        return mensaje
-                .replaceAll("\\s+", " ")
-                .trim();
+        if (causa instanceof StaleElementReferenceException) {
+            return "La página actualizó el DOM y la referencia anterior al elemento dejó "
+                    + "de ser válida. Detalle: " + detalle;
+        }
+
+        return detalle;
     }
 }
