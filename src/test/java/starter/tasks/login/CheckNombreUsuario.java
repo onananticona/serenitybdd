@@ -34,9 +34,9 @@ public class CheckNombreUsuario implements Task {
             actor.attemptsTo(
                     Ensure.that(GetNombreUsuario.getNombreUsuario()).contains("Welcome" + " " + usuario)
             );
-        } catch (Exception exception) {
+        } catch (AssertionError | Exception error) {
 
-            Throwable causaRaiz = obtenerCausaRaiz(exception);
+            Throwable causaRaiz = obtenerCausaRaiz(error);
             String motivoTecnico = describirCausa(causaRaiz);
 
             String mensajeError = String.format(
@@ -46,12 +46,12 @@ public class CheckNombreUsuario implements Task {
                     motivoTecnico
             );
 
-            Serenity.reportThat("Fallo en la tarea de login",
-                    () -> {
-                        throw new AssertionError("No se pudo completar el login: " + exception.getMessage());
-                    });
+         //  Serenity.reportThat("Fallo en la tarea de login",
+         //          () -> {
+         //              throw new AssertionError("No se pudo completar el login: " + exception.getMessage());
+         //          });
 
-            throw new AssertionError(mensajeError, exception);
+            throw new AssertionError(mensajeError, error);
         }
     }
 
@@ -78,6 +78,11 @@ public class CheckNombreUsuario implements Task {
             detalle = detalle
                     .replaceAll("\\s+", " ")
                     .trim();
+        }
+
+        if (causa instanceof AssertionError) {
+            return "El mensaje mostrado no coincide con el mensaje esperado. "
+                    + "Detalle: " + detalle;
         }
 
         return detalle;
