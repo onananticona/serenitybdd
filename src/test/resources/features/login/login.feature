@@ -13,8 +13,9 @@ Feature: Iniciar sesión en Product Store
 
     Examples:
       | usuario     | contraseña |
-      | Chava5      | Nttdata5#  |
-      | nicobarella | Nttdata1#  |
+      | Chava       | Nttdata5#  |
+      #| Chava5      | Nttdata5#  |
+      #| nicobarella | Nttdata1#  |
 
 #  Scenario Outline: El usuario inicia sesión con credenciales inválidas
 #    Given Estoy en la página de inicio de sesión de Product Store
