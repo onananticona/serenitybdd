@@ -200,30 +200,102 @@ pipeline {
         }
 
         failure {
-            emailext(
-                to: "${env.NOTIFICATION_EMAIL}",
-                subject: "❌ Falló ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                mimeType: 'text/html',
-                body: """
-                    <h2>La ejecución de pruebas falló</h2>
+            script {
 
-                    <p><strong>Trabajo:</strong> ${env.JOB_NAME}</p>
-                    <p><strong>Ejecución:</strong> #${env.BUILD_NUMBER}</p>
-                    <p><strong>Resultado:</strong> ${currentBuild.currentResult}</p>
+                def motivoError = sh(
+                    script: '''
+                        set +e
 
-                    <p>
-                        <a href="${env.BUILD_URL}">
-                            Abrir ejecución en Jenkins
-                        </a>
-                    </p>
+                        REPORTE=$(grep -l -E \
+                          '<<< FAILURE!|AssertionError|Exception|Error' \
+                          target/failsafe-reports/*.txt 2>/dev/null \
+                          | head -n 1)
 
-                    <p>
-                        <a href="${env.BUILD_URL}console">
-                            Revisar Console Output
-                        </a>
-                    </p>
-                """
-            )
+                        if [ -z "$REPORTE" ]; then
+                            exit 0
+                        fi
+
+                        MOTIVO=$(grep -E \
+                          '^[[:space:]]*Caused by:' \
+                          "$REPORTE" \
+                          | tail -n 1 \
+                          | sed -E \
+                            's/^[[:space:]]*Caused by:[[:space:]]*[^:]+:[[:space:]]*//')
+
+                        if [ -z "$MOTIVO" ]; then
+                            MOTIVO=$(grep -E -m 1 \
+                              '^java\\..*(AssertionError|Exception|Error):' \
+                              "$REPORTE" \
+                              | sed -E \
+                                's/^java\\.[^:]+:[[:space:]]*//')
+                        fi
+
+                        printf '%s' "$MOTIVO"
+                    ''',
+                    returnStdout: true,
+                    encoding: 'UTF-8'
+                ).trim()
+
+                if (!motivoError) {
+                    motivoError =
+                        'No se encontró un motivo específico. Revisa el Console Output.'
+                }
+
+                def motivoErrorHtml = motivoError
+                        .replace('&', '&amp;')
+                        .replace('<', '&lt;')
+                        .replace('>', '&gt;')
+
+                emailext(
+                    to: "${env.NOTIFICATION_EMAIL}",
+                    subject: "❌ Falló ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                    mimeType: 'text/html',
+                    body: """
+                        <h2 style="color: #c62828;">
+                            La ejecución de pruebas falló
+                        </h2>
+
+                        <p>
+                            <strong>Trabajo:</strong>
+                            ${env.JOB_NAME}
+                        </p>
+
+                        <p>
+                            <strong>Ejecución:</strong>
+                            #${env.BUILD_NUMBER}
+                        </p>
+
+                        <p>
+                            <strong>Resultado:</strong>
+                            ${currentBuild.currentResult}
+                        </p>
+
+                        <h3>Motivo del error</h3>
+
+                        <div style="
+                            background-color: #fff3f3;
+                            border-left: 5px solid #c62828;
+                            border-radius: 4px;
+                            padding: 15px;
+                            font-family: monospace;
+                        ">
+                            ${motivoErrorHtml}
+                        </div>
+
+                        <p>
+                            <a href="${env.BUILD_URL}">
+                                Abrir ejecución en Jenkins
+                            </a>
+                        </p>
+
+                        <p>
+                            <a href="${env.BUILD_URL}console">
+                                Revisar Console Output
+                            </a>
+                        </p>
+                    """
+                )
+            }
         }
 
         unstable {

@@ -60,15 +60,50 @@ public class AddProductCartTask implements Task {
                     () -> {
                         assert false : "Error detectado. Por favor revisa la sección 'Error: Elemento no interactuable' para más detalles.";
                     });
-        } catch (Exception e) {
+        } catch (Exception exception) {
+
+            String motivo = obtenerCausaRaiz(exception);
+
             Serenity.recordReportData()
                     .withTitle("Error inesperado en AddProductCartTask")
-                    .andContents("No se pudo completar la tarea. Detalles: " + e.getMessage());
+                    .andContents(
+                            """
+                            No se pudo completar la acción de agregar el producto.
+        
+                            Producto: %s
+                            Categoría: %s
+                            Motivo: %s
+                            """.formatted(producto, categoria, motivo)
+                    );
 
-            Serenity.reportThat("Fallo inesperado en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error inesperado en AddProductCartTask' para más detalles.";
-                    });
+            throw new AssertionError(
+                    """
+                    No se pudo seleccionar el producto '%s' de la categoría '%s'.
+                    Motivo: %s
+                    """.formatted(producto, categoria, motivo),
+                    exception
+            );
         }
+    }
+
+    private static String obtenerCausaRaiz(Throwable error) {
+
+        Throwable causaRaiz = error;
+
+        while (causaRaiz.getCause() != null
+                && causaRaiz.getCause() != causaRaiz) {
+
+            causaRaiz = causaRaiz.getCause();
+        }
+
+        String mensaje = causaRaiz.getMessage();
+
+        if (mensaje == null || mensaje.isBlank()) {
+            return causaRaiz.getClass().getSimpleName();
+        }
+
+        return mensaje
+                .replaceAll("\\s+", " ")
+                .trim();
     }
 }
