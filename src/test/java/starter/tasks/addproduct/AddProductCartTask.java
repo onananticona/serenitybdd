@@ -3,12 +3,12 @@ package starter.tasks.addproduct;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
-import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.targets.Target;
-import net.serenitybdd.screenplay.waits.WaitUntil;
+import org.openqa.selenium.StaleElementReferenceException;
 import starter.ui.addproduct.ProductCartPage;
 
-import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
+import java.time.Duration;
+
 import static starter.utils.ErrorDescripcion.describirCausa;
 import static starter.utils.ErrorDescripcion.obtenerCausaRaiz;
 
@@ -25,34 +25,36 @@ public class AddProductCartTask implements Task {
     @Override
     public <T extends Actor> void performAs(T actor) {
 
+        Target categoriaTarget = ProductCartPage.CATEGORIAS.get(categoria);
+
+        Target productoTarget = ProductCartPage.PRODUCTOS.get(producto);
+
+        validarTarget(
+                categoriaTarget,
+                "No existe un Target configurado para la categoría '"
+                        + categoria + "'."
+        );
+
+        validarTarget(
+                productoTarget,
+                "No existe un Target configurado para el producto '"
+                        + producto + "'."
+        );
+
         try {
-            Target categoriaTarget = ProductCartPage.CATEGORIAS.get(categoria);
-            Target productoTarget = ProductCartPage.PRODUCTOS.get(producto);
 
-            validarTarget(
+            clickConReintento(
+                    actor,
                     categoriaTarget,
-                    "No existe un Target configurado para la categoría '" + categoria + "'."
+                    5
             );
 
-            validarTarget(
+            clickConReintento(
+                    actor,
                     productoTarget,
-                    "No existe un Target configurado para el producto '" + producto + "'."
+                    10
             );
 
-            /*
-             * Se separan los clics porque al seleccionar una categoría,
-             * Demoblaze actualiza la lista de productos en el DOM.
-             */
-            actor.attemptsTo(
-                    Click.on(categoriaTarget)
-            );
-
-            actor.attemptsTo(
-                    WaitUntil.the(productoTarget, isVisible())
-                            .forNoMoreThan(10).seconds(),
-
-                    Click.on(productoTarget)
-            );
 
         } catch (Exception exception) {
 
@@ -91,5 +93,44 @@ public class AddProductCartTask implements Task {
         if (target == null) {
             throw new IllegalArgumentException(mensaje);
         }
+    }
+
+    private static <T extends Actor> void clickConReintento(
+            T actor,
+            Target target,
+            int tiempoEsperaSegundos
+    ) {
+
+        StaleElementReferenceException ultimoError = null;
+
+        for (int intento = 1; intento <= 3; intento++) {
+
+            try {
+                /*
+                 * En cada intento se vuelve a resolver el Target.
+                 * De esta manera se obtiene el elemento actual del DOM.
+                 */
+                target.resolveFor(actor)
+                        .withTimeoutOf(
+                                Duration.ofSeconds(tiempoEsperaSegundos)
+                        )
+                        .waitUntilClickable()
+                        .click();
+
+                // El clic funcionó: terminar el método.
+                return;
+
+            } catch (StaleElementReferenceException error) {
+
+                ultimoError = error;
+
+                /*
+                 * El siguiente intento volverá a resolver el Target,
+                 * obteniendo una referencia nueva del DOM.
+                 */
+            }
+        }
+
+        throw ultimoError;
     }
 }
