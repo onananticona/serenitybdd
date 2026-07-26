@@ -6,10 +6,11 @@ import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.targets.Target;
 import net.serenitybdd.screenplay.waits.WaitUntil;
-import org.openqa.selenium.StaleElementReferenceException;
 import starter.ui.addproduct.ProductCartPage;
 
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
+import static starter.utils.ErrorDescripcion.describirCausa;
+import static starter.utils.ErrorDescripcion.obtenerCausaRaiz;
 
 public class AddProductCartTask implements Task {
 
@@ -74,12 +75,12 @@ public class AddProductCartTask implements Task {
                     .withTitle("Error en AddProductCartTask")
                     .andContents(
                             """
-                            No se pudo completar la selección del producto.
-
-                            Producto: %s
-                            Categoría: %s
-                            Motivo técnico: %s
-                            """.formatted(producto, categoria, motivoTecnico)
+                                    No se pudo completar la selección del producto.
+                                    
+                                    Producto: %s
+                                    Categoría: %s
+                                    Motivo técnico: %s
+                                    """.formatted(producto, categoria, motivoTecnico)
                     );
 
             throw new AssertionError(mensajeError, exception);
@@ -90,38 +91,5 @@ public class AddProductCartTask implements Task {
         if (target == null) {
             throw new IllegalArgumentException(mensaje);
         }
-    }
-
-    private static Throwable obtenerCausaRaiz(Throwable error) {
-
-        Throwable causaRaiz = error;
-
-        while (causaRaiz.getCause() != null
-                && causaRaiz.getCause() != causaRaiz) {
-
-            causaRaiz = causaRaiz.getCause();
-        }
-
-        return causaRaiz;
-    }
-
-    private static String describirCausa(Throwable causa) {
-
-        String detalle = causa.getMessage();
-
-        if (detalle == null || detalle.isBlank()) {
-            detalle = causa.getClass().getSimpleName();
-        } else {
-            detalle = detalle
-                    .replaceAll("\\s+", " ")
-                    .trim();
-        }
-
-        if (causa instanceof StaleElementReferenceException) {
-            return "La página actualizó el DOM y la referencia anterior al elemento dejó "
-                    + "de ser válida. Detalle: " + detalle;
-        }
-
-        return detalle;
     }
 }

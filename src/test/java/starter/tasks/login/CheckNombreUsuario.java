@@ -16,6 +16,9 @@ import starter.ui.login.LoginPage;
 
 import java.time.Duration;
 
+import static starter.utils.ErrorDescripcion.describirCausa;
+import static starter.utils.ErrorDescripcion.obtenerCausaRaiz;
+
 public class CheckNombreUsuario implements Task {
 
     WebDriverWait wait;
@@ -48,67 +51,10 @@ public class CheckNombreUsuario implements Task {
                     motivoTecnico
             );
 
-         //  Serenity.reportThat("Fallo en la tarea de login",
-         //          () -> {
-         //              throw new AssertionError("No se pudo completar el login: " + exception.getMessage());
-         //          });
-
             throw new AssertionError(mensajeError, error);
         }
     }
 
-    private static Throwable obtenerCausaRaiz(Throwable error) {
-
-        Throwable causaRaiz = error;
-
-        while (causaRaiz.getCause() != null
-                && causaRaiz.getCause() != causaRaiz) {
-
-            causaRaiz = causaRaiz.getCause();
-        }
-
-        return causaRaiz;
-    }
-
-    private static String describirCausa(Throwable causa) {
-
-        String detalle = causa.getMessage();
-
-        if (detalle == null || detalle.isBlank()) {
-            detalle = causa.getClass().getSimpleName();
-        } else {
-            detalle = detalle
-                    .replaceAll("\\s+", " ")
-                    .trim();
-        }
-
-        if (causa instanceof TimeoutException) {
-            return "El mensaje de bienvenida no apareció dentro de los "
-                    + "10 segundos de espera. Verifica las credenciales, "
-                    + "el proceso de login o el localizador. Detalle: "
-                    + detalle;
-        }
-
-        if (causa instanceof StaleElementReferenceException) {
-            return "La página actualizó el DOM y la referencia anterior "
-                    + "al mensaje dejó de ser válida. Detalle: "
-                    + detalle;
-        }
-
-        if (causa instanceof AssertionError) {
-            return "El mensaje mostrado no coincide con el mensaje esperado. "
-                    + "Detalle: " + detalle;
-        }
-
-        if (causa instanceof UnhandledAlertException) {
-            return "El usuario no fue encontrado. "
-                    + "Detalle: " + detalle;
-        }
-
-
-
-        return detalle;
-    }
 }
 
 

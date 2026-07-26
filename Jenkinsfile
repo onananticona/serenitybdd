@@ -56,7 +56,7 @@ pipeline {
 
     triggers {
         // Regresión automática de lunes a viernes durante la hora de las 2 a. m.
-        cron('H 2 * * 1-5')
+        cron('31 11 * * 1-5')
 
         // Revisa GitHub cada 15 minutos y ejecuta si encuentra cambios.
         pollSCM('H/15 * * * *')
