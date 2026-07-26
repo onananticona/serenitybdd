@@ -7,6 +7,8 @@ import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
 import net.serenitybdd.screenplay.ensure.Ensure;
 import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import starter.questions.login.GetNombreUsuario;
@@ -80,10 +82,30 @@ public class CheckNombreUsuario implements Task {
                     .trim();
         }
 
+        if (causa instanceof TimeoutException) {
+            return "El mensaje de bienvenida no apareció dentro de los "
+                    + "10 segundos de espera. Verifica las credenciales, "
+                    + "el proceso de login o el localizador. Detalle: "
+                    + detalle;
+        }
+
+        if (causa instanceof StaleElementReferenceException) {
+            return "La página actualizó el DOM y la referencia anterior "
+                    + "al mensaje dejó de ser válida. Detalle: "
+                    + detalle;
+        }
+
         if (causa instanceof AssertionError) {
             return "El mensaje mostrado no coincide con el mensaje esperado. "
                     + "Detalle: " + detalle;
         }
+
+        if (causa instanceof UnhandledAlertException) {
+            return "El usuario no fue encontrado. "
+                    + "Detalle: " + detalle;
+        }
+
+
 
         return detalle;
     }
