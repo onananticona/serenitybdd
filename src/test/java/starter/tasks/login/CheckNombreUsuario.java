@@ -6,12 +6,18 @@ import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
 import net.serenitybdd.screenplay.ensure.Ensure;
+import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import starter.questions.login.GetNombreUsuario;
 import starter.ui.login.LoginPage;
 
 import java.time.Duration;
+
+import static starter.utils.ErrorDescripcion.describirCausa;
+import static starter.utils.ErrorDescripcion.obtenerCausaRaiz;
 
 public class CheckNombreUsuario implements Task {
 
@@ -33,13 +39,22 @@ public class CheckNombreUsuario implements Task {
             actor.attemptsTo(
                     Ensure.that(GetNombreUsuario.getNombreUsuario()).contains("Welcome" + " " + usuario)
             );
-        } catch (Exception e) {
-            Serenity.reportThat("Fallo en la tarea de login",
-                    () -> {
-                        throw new AssertionError("No se pudo completar el login: " + e.getMessage());
-                    });
+        } catch (AssertionError | Exception error) {
+
+            Throwable causaRaiz = obtenerCausaRaiz(error);
+            String motivoTecnico = describirCausa(causaRaiz);
+
+            String mensajeError = String.format(
+                    "No se pudo visualizar el mensaje de bienvenida para el usuario '%s'. " +
+                            "Motivo técnico: %s",
+                    usuario,
+                    motivoTecnico
+            );
+
+            throw new AssertionError(mensajeError, error);
         }
     }
+
 }
 
 

@@ -3,13 +3,14 @@ package starter.tasks.addproduct;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
-import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.targets.Target;
-import net.thucydides.core.webdriver.exceptions.ElementShouldBePresentException;
-import org.openqa.selenium.ElementNotInteractableException;
-import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.StaleElementReferenceException;
 import starter.ui.addproduct.ProductCartPage;
 
+import java.time.Duration;
+
+import static starter.utils.ErrorDescripcion.describirCausa;
+import static starter.utils.ErrorDescripcion.obtenerCausaRaiz;
 
 public class AddProductCartTask implements Task {
 
@@ -23,52 +24,113 @@ public class AddProductCartTask implements Task {
 
     @Override
     public <T extends Actor> void performAs(T actor) {
-        // Target categoriaTarget = Target.the("Botón de categoría " + categoria)
-        //         .located(By.xpath("//a[@id='itemc' and text()='" + categoria + "']"));
+
         Target categoriaTarget = ProductCartPage.CATEGORIAS.get(categoria);
-        Target productTarget = ProductCartPage.PRODUCTOS.get(producto);
+
+        Target productoTarget = ProductCartPage.PRODUCTOS.get(producto);
+
+        validarTarget(
+                categoriaTarget,
+                "No existe un Target configurado para la categoría '"
+                        + categoria + "'."
+        );
+
+        validarTarget(
+                productoTarget,
+                "No existe un Target configurado para el producto '"
+                        + producto + "'."
+        );
 
         try {
-            actor.attemptsTo(
-                    Click.on(categoriaTarget),
-                    Click.on(productTarget)
+
+            clickConReintento(
+                    actor,
+                    categoriaTarget,
+                    5
             );
-        } catch (ElementShouldBePresentException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no presente")
-                    .andContents("No se pudo localizar el elemento. Mensaje: " + e.getMessage());
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        throw new AssertionError("Error detectado. Por favor revisa la sección 'Error: Elemento no presente' para más detalles.", e);
-                    });
-        } catch (NoSuchElementException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no encontrado en DOM")
-                    .andContents("No se encontró el elemento en el DOM. Mensaje: " + e.getMessage());
+            clickConReintento(
+                    actor,
+                    productoTarget,
+                    10
+            );
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error: Elemento no encontrado en DOM' para más detalles.";
-                    });
-        } catch (ElementNotInteractableException e) {
-            Serenity.recordReportData()
-                    .withTitle("Error: Elemento no interactuable")
-                    .andContents("El elemento está en el DOM pero no es interactuable. Mensaje: " + e.getMessage());
 
-            Serenity.reportThat("Fallo en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error: Elemento no interactuable' para más detalles.";
-                    });
-        } catch (Exception e) {
-            Serenity.recordReportData()
-                    .withTitle("Error inesperado en AddProductCartTask")
-                    .andContents("No se pudo completar la tarea. Detalles: " + e.getMessage());
+        } catch (Exception exception) {
 
-            Serenity.reportThat("Fallo inesperado en AddProductCartTask",
-                    () -> {
-                        assert false : "Error detectado. Por favor revisa la sección 'Error inesperado en AddProductCartTask' para más detalles.";
-                    });
+            Throwable causaRaiz = obtenerCausaRaiz(exception);
+            String motivoTecnico = describirCausa(causaRaiz);
+
+            /*
+             * Debe estar en una sola línea para que Jenkins pueda
+             * recuperarlo fácilmente desde el reporte de Failsafe.
+             */
+            String mensajeError = String.format(
+                    "No se pudo seleccionar el producto '%s' de la categoría '%s'. " +
+                            "Motivo técnico: %s",
+                    producto,
+                    categoria,
+                    motivoTecnico
+            );
+
+            Serenity.recordReportData()
+                    .withTitle("Error en AddProductCartTask")
+                    .andContents(
+                            """
+                                    No se pudo completar la selección del producto.
+                                    
+                                    Producto: %s
+                                    Categoría: %s
+                                    Motivo técnico: %s
+                                    """.formatted(producto, categoria, motivoTecnico)
+                    );
+
+            throw new AssertionError(mensajeError, exception);
         }
+    }
+
+    private static void validarTarget(Target target, String mensaje) {
+        if (target == null) {
+            throw new IllegalArgumentException(mensaje);
+        }
+    }
+
+    private static <T extends Actor> void clickConReintento(
+            T actor,
+            Target target,
+            int tiempoEsperaSegundos
+    ) {
+
+        StaleElementReferenceException ultimoError = null;
+
+        for (int intento = 1; intento <= 3; intento++) {
+
+            try {
+                /*
+                 * En cada intento se vuelve a resolver el Target.
+                 * De esta manera se obtiene el elemento actual del DOM.
+                 */
+                target.resolveFor(actor)
+                        .withTimeoutOf(
+                                Duration.ofSeconds(tiempoEsperaSegundos)
+                        )
+                        .waitUntilClickable()
+                        .click();
+
+                // El clic funcionó: terminar el método.
+                return;
+
+            } catch (StaleElementReferenceException error) {
+
+                ultimoError = error;
+
+                /*
+                 * El siguiente intento volverá a resolver el Target,
+                 * obteniendo una referencia nueva del DOM.
+                 */
+            }
+        }
+
+        throw ultimoError;
     }
 }
