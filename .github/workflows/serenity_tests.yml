@@ -5,9 +5,6 @@ on:
     branches:
       - main
       - feature/**
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -25,8 +22,14 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Instalar Google Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Verificar versión de Chrome
+        run: google-chrome --version
+
       - name: Ejecutar pruebas Serenity
-        run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification -Dwebdriver.driver=chrome -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--window-size=1920,1080"
+        run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification -Dwebdriver.driver=chrome -Dwebdriver.autodownload=true -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--window-size=1920,1080"
 
       - name: Publicar reporte Serenity
         if: always()
