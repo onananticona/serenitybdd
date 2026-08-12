@@ -26,7 +26,7 @@ jobs:
           cache: maven
 
       - name: Ejecutar pruebas Serenity
-        run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification
+        run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification -Dwebdriver.driver=chrome -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--window-size=1920,1080"
 
       - name: Publicar reporte Serenity
         if: always()
