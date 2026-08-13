@@ -4,8 +4,13 @@ on:
   push:
     branches:
       - main
-      - feature/jenkins-pipeline
+      - feature/**
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   serenity-tests:
@@ -31,9 +36,29 @@ jobs:
       - name: Ejecutar pruebas Serenity
         run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification -Dwebdriver.driver=chrome -Dwebdriver.autodownload=true -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--window-size=1920,1080"
 
-      - name: Publicar reporte Serenity
+      - name: Publicar reporte Serenity como artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: serenity-report
           path: target/site/serenity
+
+      - name: Preparar reporte para GitHub Pages
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/site/serenity
+
+  deploy-report:
+    needs: serenity-tests
+    if: always()
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar reporte Serenity en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
