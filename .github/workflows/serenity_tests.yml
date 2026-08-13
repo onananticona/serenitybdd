@@ -1,0 +1,64 @@
+name: Serenity BDD Tests
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  serenity-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Instalar Google Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Verificar versión de Chrome
+        run: google-chrome --version
+
+      - name: Ejecutar pruebas Serenity
+        run: mvn clean verify -Dcucumber.filter.tags="@addProductCart" -Denvironment=certification -Dwebdriver.driver=chrome -Dwebdriver.autodownload=true -Dchrome.switches="--headless=new,--no-sandbox,--disable-dev-shm-usage,--window-size=1920,1080"
+
+      - name: Publicar reporte Serenity como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: serenity-report
+          path: target/site/serenity
+
+      - name: Preparar reporte para GitHub Pages
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/site/serenity
+
+  deploy-report:
+    needs: serenity-tests
+    if: always()
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Publicar reporte Serenity en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
